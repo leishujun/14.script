@@ -1,0 +1,217 @@
+(umask 666；touch /data/f1）：在脚本中是一次性使用小括号里面的内容的,
+用小括号括起来的命令是一次性的，用完一次后就会失效了
+
+shebang机制
+#!/bin/bash
+#!/usr/bin/python
+#!/usr/bin/perl
+
+spaceline1=$(grep  '^[[:space:]]*$'  $1 | wc -l)
+spaceline2=$(grep  '^[[:space:]]*$'  $2 | wc -l)
+
+echo $spaceline=$[$spaceline1+$spaceline2]
+
+
+脚本排错：
+bash -n hello.sh 只能检查出语法的错误，语法错误之前的命令还是会执行
+bash -x hello.sh  跟踪调试脚本，这个比上面的要更好些，但可能也只是局限于命令比较少的脚本
+
+
+hash   中存储着脚本的执行路径
+如果脚本是因为被移动了而执行不了，可以到被移动到的路径下去执行，或者用
+hash -r 清楚所有hash缓存
+hash -d 你的脚本的缓存
+
+
+显示系统环境变量
+外部命令：
+env
+printenv
+内部命令：
+set   显示所有变量，最全的 
+export   定义环境变量
+declare -x   定义环境变量
+
+删除不想用的环境变量：
+unset  名字
+
+echo显示的内容都是只在终端的当前进程中有效，其他进程中都无法识别当前进程的变量，相互之间的同一名字变量，也不会有影响。除非使用全局变量，export这个命令。或者把变量写进全局配置文件中
+echo $name：显示的内容格式会变成一行的内容
+echo "$name"：显示的内容还是我们书写时候显示的内容，格式不会变化
+
+
+
+
+变量引用：
+(1)引用字符串：name="root"
+(2)变量引用：name="$USER"
+(3)命令引用：name=`command`  $(command)
+
+变量赋值：
+export  name=xxxx  
+declare -x name=xxxx  
+
+pstree  -p  查看自己的父进程
+
+变量命名法则：
+1.不使用程序中的保留字，比如说shell中有if、for这个内部命令
+2.只能使用字母、数字、下划线，但是不能以数字开头。
+3.命名变量的时候方便给自己识别出来
+4.统一命名规则：驼峰法
+
+
+hostname
+ifconfig | egrep -o '\b([.0-9].){7,15}\b'
+/etc/centos-release
+uname -r
+lscpu
+lsblk
+/etc/proc/meminfo
+free -h
+
+#!/bin/bash
+echo -e "\033[1;32m开始备份\033[0m"
+sleep  5
+cp -a /etc/  /root/etc`date +%F %T`
+sleep 5
+echo -e "\033[1;32m备份结束\033[0m"
+echo -e  '\a'
+
+df  |  grep sd | tr -s ' ' | cut -d ' ' -f 5 
+w| tr -s ' '|cut -d ' ' -f 3| grep '\b[0-9.]\b'|sort |uniq -c|sort -nr
+
+
+系统自带的环境变量
+PATH
+SHELL
+USER
+UID
+HOME
+PWD
+SHLVL   ：  bash的嵌套深度
+LANG
+MAIL
+HOSTNAME
+HISTSIZE
+
+_   ：下划线，显示前面一个命令的最后一个参数
+例如：
+echo a b c
+echo $_  
+c
+
+
+
+
+常量：常量无法更改，用户指定的常量只能在结束进程后才会失效
+declare -r =readonly -p  查看只读变量
+declare -r name 声明只读变量
+
+
+
+
+
+echo magedu  |  passwd --stdin root
+设置magdu为root用户的密码
+
+修改远程的配置文件是在家目录下的
+/root/.ssh/known_hosts
+
+远程复制文件到对方电脑上：
+vi 45_scp.sh
+#!/bin/bash
+echo  -e  '\e[1;32m倒数5秒后，开始复制文件\e[0m' 
+sleep 5
+scp -r  -l -P 60000 $* lei@172.16.254.250:/data
+sleep 5;echo -e '\a'
+echo  -e  '\e[1;32m文件已经复制完成\e[0m' 
+
+
+
+特殊变量：
+echo  $$ ：显示本进程的PID
+echo $PPID：显示父进程的PID，第一个P的意思是parents的意思
+
+这两个只有在双引号中才会体现出差异来
+$* ：传递的东西是一个整体，里面可能有多个字符串
+$ @： 传递第一个字符串,不加引号的情况下，取一个参数，类似于取最后一个参数的$_
+
+$# ： 传递给脚本的参数个数
+$0 ： 显示命令本身的路径，和软链接有关系，如果路径显示的是软链接会有什么情况？
+$1,$2,$3,$4,$5  对应第1，2，3，4，5个参数，在脚本中有shift时把前面的挤下去，后面的派上来
+set --   ：清空所有参数
+
+$0  ：显示绝对路径
+$?  ：变量保存最近命令退出的状态，显示的是0就代表执行成功，不是就失败
+实例：
+查看显示结果来判断是否成功
+命令  &> /dev/null 
+echo &?
+
+尝试ping192.168.254.250这个地址，看看能不能ping通
+ping -c1 192.168.254.250 &> /dev/null
+echo &?
+
+实际上，在语法正确的情况下。显示的结果是显示最后一条命令是否执行成功
+
+
+这里牵扯到软链接的功能，不同的软链接用脚本执行的效果可能是不同的
+
+shift  ：把后面的参数往前面推，前面的参数被排出
+exit 10 ：把返回结果传给&？
+
+COLOR=$[RANDOM%7+31]
+echo  -e  '\e[1;${COLOR}请小心m\e[0m'
+显示的字体颜色不同
+
+$(())
+$[]
+${}
+expr  变量1   操作   变量2
+
+
+&&   ：短路与，前面的是真的，后面的才会有可能是真的！前面的执行成功了才会执行后面的
+| |  ：短路或，相当于或的过程与结论，有一个或一个以上就是真的
+
+XOR ：异或，相同为假，不同为真！同性相斥，异性相吸！
+6=110    4=100
+6^4=2
+110
+100
+010=2
+
+异或的过程
+a=4  b=6
+a=$[a^b];b=$[a^b];a=$[a^b];echo "$a=a         $b=b   "
+6=a 4=b
+
+
+$RANDOM  (0-32767之间)
+%  : 取余数
+echo  $[$RANDOM%6+31]    （31-37之间,可以用来表示颜色）
+
+
+
+vi /root/bin/sumid.sh
+#!/bin/bash
+echo -e '\e[1;32m后退，我要开始装逼了!\e[0m
+sleep 5
+ head -n$* /etc/passwd|tail -1|cut -d: -f3
+
+
+
+
+
+IP地址：   (( 1?[0-9]?[0-9] |  2[0-4][0-9] |  25[0-5])\.){3}( 1?[0-9]?[0-9] |  2[0-4][0-9] |  25[0-5])
+
+
+
+
+
+
+
+
+
+
+
+
